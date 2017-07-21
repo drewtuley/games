@@ -2,6 +2,7 @@ import curses
 import time
 from random import choice
 import copy
+import logging
 
 ROWS = 6
 COLS = 7
@@ -126,8 +127,8 @@ def random_move():
 
 
 def restore_board(stash):
-    for x in len(board):
-        board[x] = stash[x]
+    for ix in range(ROWS*COLS):
+        board[ix] = stash[ix]
 
 
 def rule0():
@@ -135,15 +136,27 @@ def rule0():
 
 
 def rule1(player):
-    ''' Can I win in 1 move'''
+    """Can player win in 1 move"""
     for cx in range(0, COLS):
-        stash = copy.copy(board)
-        restore_board(stash)
-
+        if is_move_valid(cx):
+            stash = copy.copy(board)
+            make_move(cx, player)
+            winner = find_winner()
+            restore_board(stash)
+            if winner is not None:
+                logging.debug('{} has a winning move @ {}'.format(player, cx))
+                return cx
     return None        
 
 
+
+
+
 def main(screen):
+    logging.basicConfig(format='%(asctime)s %(message)s',
+                        filename='c4.log', level=logging.DEBUG)
+    logging.captureWarnings(True)
+
     curses.initscr()
 
     curses.start_color()
@@ -178,7 +191,9 @@ def main(screen):
             if player == RED:
                 move = rule1(player)
                 if move is None:
-                    move = random_move()
+                    move = rule1(swap_player(player))
+                    if move is None:
+                        move = random_move()
             else:
                 move = random_move()
 
@@ -198,6 +213,7 @@ def main(screen):
         score_win.box()
         score_win.addstr(1, 1, '{:04d}'.format(scores[RED]), colour2)
         score_win.addstr(1, 9, '{:04d}'.format(scores[BLUE]), colour3)
+        logging.debug('RED:{} BLUE:{}'.format(scores[RED], scores[BLUE]))
         score_win.refresh()
         start_player = swap_player(start_player)
 
@@ -206,5 +222,6 @@ def main(screen):
 
 try:
     curses.wrapper(main)
-except:
+except Exception as err:
+    print(err)
     exit()
