@@ -1,6 +1,7 @@
 import curses
 import time
 from random import choice
+import copy
 
 ROWS = 6
 COLS = 7
@@ -112,6 +113,36 @@ def draw_board(wx, c_map):
     wx.refresh()
 
 
+def clear_board():
+    for x in range(ROWS*COLS):
+        board[x] = 0
+
+
+def random_move():
+    move = choice(CHOICES)
+    while not is_move_valid(move):
+        move = choice(CHOICES)
+    return move
+
+
+def restore_board(stash):
+    for x in len(board):
+        board[x] = stash[x]
+
+
+def rule0():
+    return random_move()
+
+
+def rule1(player):
+    ''' Can I win in 1 move'''
+    for cx in range(0, COLS):
+        stash = copy.copy(board)
+        restore_board(stash)
+
+    return None        
+
+
 def main(screen):
     curses.initscr()
 
@@ -132,26 +163,43 @@ def main(screen):
     screen.refresh()
 
     win = curses.newwin(ROWS + 2, COLS + 2 + (COLS - 1), 1, 1)
+    score_win = curses.newwin(3, COLS+2+(COLS-1), 2+ROWS+1,1)
     win.bkgd(colour1)
+    score_win.bkgd(colour1)
 
-    player = RED
-    winner = None
-    while winner is None and moves_remaining() > 0:
-        move = choice(CHOICES)
-        while not is_move_valid(move):
-            move = choice(CHOICES)
-        make_move(move, player)
-
+    scores = { RED: 0, BLUE: 0}
+    start_player = RED
+    while True:
+        clear_board()
+        player = start_player
         draw_board(win, colour_map)
-        winner = find_winner()
-        if winner is None:
-            player = swap_player(player)
-            time.sleep(0.01)
-        else:
-            show_winner(winner)
-            draw_board(win, colour_map)
+        winner = None
+        while winner is None and moves_remaining() > 0:
+            if player == RED:
+                move = rule1(player)
+                if move is None:
+                    move = random_move()
+            else:
+                move = random_move()
 
-    ch = screen.getch()
+            make_move(move, player)
+
+            draw_board(win, colour_map)
+            winner = find_winner()
+            if winner is None:
+                player = swap_player(player)
+                #time.sleep(0.01)
+            else:
+                win_piece = winner[0]
+                scores[win_piece] += 1
+                show_winner(winner)
+                draw_board(win, colour_map)
+                #time.sleep(0.5)
+        score_win.box()
+        score_win.addstr(1, 1, '{:04d}'.format(scores[RED]), colour2)
+        score_win.addstr(1, 9, '{:04d}'.format(scores[BLUE]), colour3)
+        score_win.refresh()
+        start_player = swap_player(start_player)
 
     curses.curs_set(prev_curses)
 
