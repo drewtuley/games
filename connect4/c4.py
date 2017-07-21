@@ -139,7 +139,7 @@ def main(screen):
         winner = find_winner()
         if winner is None:
             player = swap_player(player)
-            time.sleep(0.1)
+            time.sleep(0.01)
         else:
             show_winner(winner)
             draw_board(win, colour2, colour3, colour4)
