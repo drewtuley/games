@@ -1,10 +1,9 @@
-import curses
-import time
-from random import choice
 import copy
+import curses
 import logging
 import sys
 import traceback
+from random import choice
 
 ROWS = 6
 COLS = 7
@@ -71,23 +70,27 @@ def precalc_winning_nodes():
     # check horizontal
     for rx in ([0, 1, 2, 3, 4, 5]):
         for cx in ([0, 1, 2, 3]):
-            yield (rx,cx), piece_index(rx, cx), piece_index(rx, cx + 1), piece_index(rx, cx + 2), piece_index(rx, cx + 3)
+            yield (rx, cx), piece_index(rx, cx), piece_index(rx, cx + 1), piece_index(rx, cx + 2), piece_index(rx,
+                                                                                                               cx + 3)
     # pure vertical
     for rx in ([0, 1, 2]):
         for cx in ([0, 1, 2, 3, 4, 5, 6]):
-            yield (rx,cx), piece_index(rx, cx), piece_index(rx + 1, cx), piece_index(rx + 2, cx), piece_index(rx + 3, cx)
+            yield (rx, cx), piece_index(rx, cx), piece_index(rx + 1, cx), piece_index(rx + 2, cx), piece_index(rx + 3,
+                                                                                                               cx)
     # forward slope
     for rx in ([0, 1, 2]):
         for cx in ([0, 1, 2, 3]):
-            yield (rx,cx), piece_index(rx, cx), piece_index(rx + 1, cx + 1), piece_index(rx + 2, cx + 2), piece_index(rx + 3, cx + 3)
+            yield (rx, cx), piece_index(rx, cx), piece_index(rx + 1, cx + 1), piece_index(rx + 2, cx + 2), piece_index(
+                rx + 3, cx + 3)
     # backward slope    
     for rx in ([0, 1, 2]):
         for cx in ([3, 4, 5, 6]):
-            yield (rx,cx), piece_index(rx, cx), piece_index(rx + 1, cx - 1), piece_index(rx + 2, cx - 2), piece_index(rx + 3, cx - 3)
+            yield (rx, cx), piece_index(rx, cx), piece_index(rx + 1, cx - 1), piece_index(rx + 2, cx - 2), piece_index(
+                rx + 3, cx - 3)
 
 
 def find_winner():
-    empty_above={}
+    empty_above = {}
     for nodes in connect4_nodes:
         if len(empty_above) == 7:
             break
@@ -100,43 +103,42 @@ def find_winner():
                 empty_above[nodes[0][1]] = True
 
 
-
 def find_winner_old():
     # check horizontal
     for rx in ([0, 1, 2, 3, 4, 5]):
         for cx in ([0, 1, 2, 3]):
             piece = get_piece(rx, cx)
-            if piece != 0 and get_piece(rx, cx + 1) == piece and get_piece(rx, cx + 2) == piece and get_piece(rx,
-                                                                                                              cx + 3) == piece:
+            if piece != 0 and get_piece(rx, cx + 1) == piece and get_piece(rx, cx + 2) == piece \
+                    and get_piece(rx, cx + 3) == piece:
                 return piece, (rx, cx), (rx, cx + 1), (rx, cx + 2), (rx, cx + 3)
     # pure vertical
     for rx in ([0, 1, 2]):
         for cx in ([0, 1, 2, 3, 4, 5, 6]):
             piece = get_piece(rx, cx)
-            if piece != 0 and get_piece(rx + 1, cx) == piece and get_piece(rx + 2, cx) == piece and get_piece(rx + 3,
-                                                                                                              cx) == piece:
+            if piece != 0 and get_piece(rx + 1, cx) == piece and get_piece(rx + 2, cx) == piece \
+                    and get_piece(rx + 3, cx) == piece:
                 return piece, (rx, cx), (rx + 1, cx), (rx + 2, cx), (rx + 3, cx)
     # forward slope
     for rx in ([0, 1, 2]):
         for cx in ([0, 1, 2, 3]):
             piece = get_piece(rx, cx)
-            if piece != 0 and get_piece(rx + 1, cx + 1) == piece and get_piece(rx + 2, cx + 2) == piece and get_piece(
-                            rx + 3, cx + 3) == piece:
+            if piece != 0 and get_piece(rx + 1, cx + 1) == piece and get_piece(rx + 2, cx + 2) == piece \
+                    and get_piece(rx + 3, cx + 3) == piece:
                 return piece, (rx, cx), (rx + 1, cx + 1), (rx + 2, cx + 2), (rx + 3, cx + 3)
 
     # backward slope    
     for rx in ([0, 1, 2]):
         for cx in ([3, 4, 5, 6]):
             piece = get_piece(rx, cx)
-            if piece != 0 and get_piece(rx + 1, cx - 1) == piece and get_piece(rx + 2, cx - 2) == piece and get_piece(
-                            rx + 3, cx - 3) == piece:
+            if piece != 0 and get_piece(rx + 1, cx - 1) == piece and get_piece(rx + 2, cx - 2) == piece \
+                    and get_piece(rx + 3, cx - 3) == piece:
                 return piece, (rx, cx), (rx + 1, cx - 1), (rx + 2, cx - 2), (rx + 3, cx - 3)
 
 
 def show_winner(winner):
     piece = winner[0]
     for w in winner[1:]:
-        #set_piece(w[0], w[1], GREEN)
+        # set_piece(w[0], w[1], GREEN)
         board[w] = GREEN
 
 
@@ -156,11 +158,11 @@ def draw_board(wx, c_map):
 
 
 def clear_board():
-    for x in range(ROWS*COLS):
+    for x in range(ROWS * COLS):
         board[x] = 0
 
 
-def random_move():
+def random_move(p):
     move = choice(CHOICES)
     while not is_move_valid(move):
         move = choice(CHOICES)
@@ -168,7 +170,7 @@ def random_move():
 
 
 def restore_board(stash):
-    for ix in range(ROWS*COLS):
+    for ix in range(ROWS * COLS):
         board[ix] = stash[ix]
 
 
@@ -186,12 +188,28 @@ def rule1(player):
             winner = find_winner()
             restore_board(stash)
             if winner is not None:
-                logging.debug('{} has a winning move @ {}'.format(player, cx))
+                logging.debug('rule1: {} has a winning move @ {}'.format(player, cx))
                 return cx
-    return None        
+    return None
 
 
+def rule2(player):
+    """Rule 1 for the other player (i.e. if he can win in 1 move I should stop him)"""
+    return rule1(swap_player(player))
 
+
+def rule3(player):
+    """ Can player win in 2 moves (if not stopped) """
+    for cx in range(0, COLS):
+        if is_move_valid(cx):
+            stash = copy.copy(board)
+            make_move(cx, player)
+            win_move2 = rule1(player)
+            restore_board(stash)
+            if win_move2 is not None:
+                logging.debug('rule3: {} has a potentially winning move @ {} & {}'.format(player, cx, win_move2))
+                return cx
+    return None
 
 
 def main(screen):
@@ -201,7 +219,6 @@ def main(screen):
 
     for nodex in precalc_winning_nodes():
         print(nodex)
-
 
     curses.initscr()
 
@@ -222,11 +239,11 @@ def main(screen):
     screen.refresh()
 
     win = curses.newwin(ROWS + 2, COLS + 2 + (COLS - 1), 1, 1)
-    score_win = curses.newwin(3, COLS+2+(COLS-1), 2+ROWS+1,1)
+    score_win = curses.newwin(3, COLS + 2 + (COLS - 1), 2 + ROWS + 1, 1)
     win.bkgd(colour1)
     score_win.bkgd(colour1)
 
-    scores = { RED: 0, BLUE: 0}
+    scores = {RED: 0, BLUE: 0}
     start_player = RED
     while True:
         clear_board()
@@ -235,28 +252,28 @@ def main(screen):
         winner = None
         while winner is None and moves_remaining() > 0:
             if player == RED:
-                move = rule1(player)
-                if move is None:
-                    move = rule1(swap_player(player))
-                    if move is None:
-                        move = random_move()
+                for rule in [rule1, rule2, rule3, random_move]:
+                    move = rule(player)
+                    if move is not None:
+                        break
             else:
-                move = random_move()
+                move = random_move(1)
 
-            logging.debug('real move: {} for {}'.format(move, player))
+            logging.debug('move: player {} goes {}'.format(player, move))
+
             make_move(move, player)
 
             draw_board(win, colour_map)
             winner = find_winner()
             if winner is None:
                 player = swap_player(player)
-                #time.sleep(0.01)
+                # time.sleep(0.01)
             else:
                 win_piece = winner[0]
                 scores[win_piece] += 1
                 show_winner(winner)
                 draw_board(win, colour_map)
-                #time.sleep(0.1)
+                # time.sleep(0.1)
         score_win.box()
         score_win.addstr(1, 1, '{:04d}'.format(scores[RED]), colour2)
         score_win.addstr(1, 9, '{:04d}'.format(scores[BLUE]), colour3)
@@ -281,7 +298,8 @@ for node in sorted(node_map.keys()):
     for c4 in node_map[node]:
         connect4_nodes.append(c4)
 for node in connect4_nodes:
-    print('{}: {} {} {} {} {} {} {} {}'.format(node[0], node[1], board[node[1]], node[2], board[node[2]], node[3], board[node[3]], node[4], board[node[4]]))
+    print('{}: {} {} {} {} {} {} {} {}'.format(node[0], node[1], board[node[1]], node[2], board[node[2]], node[3],
+                                               board[node[3]], node[4], board[node[4]]))
 
 try:
     curses.wrapper(main)
