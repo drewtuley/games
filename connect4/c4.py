@@ -3,6 +3,8 @@ import time
 from random import choice
 import copy
 import logging
+import sys
+import traceback
 
 ROWS = 6
 COLS = 7
@@ -18,6 +20,10 @@ board = [0 for ix in range(ROWS * COLS)]
 
 def piece_index(row, col):
     return row * 7 + col
+
+
+def get_piece_tuple(tpl):
+    return get_piece(tpl[0], tpl[1])
 
 
 def get_piece(row, col):
@@ -61,7 +67,41 @@ def swap_player(player):
         return RED
 
 
+def precalc_winning_nodes():
+    # check horizontal
+    for rx in ([0, 1, 2, 3, 4, 5]):
+        for cx in ([0, 1, 2, 3]):
+            yield (rx,cx), piece_index(rx, cx), piece_index(rx, cx + 1), piece_index(rx, cx + 2), piece_index(rx, cx + 3)
+    # pure vertical
+    for rx in ([0, 1, 2]):
+        for cx in ([0, 1, 2, 3, 4, 5, 6]):
+            yield (rx,cx), piece_index(rx, cx), piece_index(rx + 1, cx), piece_index(rx + 2, cx), piece_index(rx + 3, cx)
+    # forward slope
+    for rx in ([0, 1, 2]):
+        for cx in ([0, 1, 2, 3]):
+            yield (rx,cx), piece_index(rx, cx), piece_index(rx + 1, cx + 1), piece_index(rx + 2, cx + 2), piece_index(rx + 3, cx + 3)
+    # backward slope    
+    for rx in ([0, 1, 2]):
+        for cx in ([3, 4, 5, 6]):
+            yield (rx,cx), piece_index(rx, cx), piece_index(rx + 1, cx - 1), piece_index(rx + 2, cx - 2), piece_index(rx + 3, cx - 3)
+
+
 def find_winner():
+    empty_above={}
+    for nodes in connect4_nodes:
+        if len(empty_above) == 7:
+            break
+        if nodes[0][1] not in empty_above:
+            piece = board[nodes[1]]
+            if piece != 0:
+                if board[nodes[2]] == piece and board[nodes[3]] == piece and board[nodes[4]] == piece:
+                    return piece, nodes[1], nodes[2], nodes[3], nodes[4]
+            else:
+                empty_above[nodes[0][1]] = True
+
+
+
+def find_winner_old():
     # check horizontal
     for rx in ([0, 1, 2, 3, 4, 5]):
         for cx in ([0, 1, 2, 3]):
@@ -96,7 +136,8 @@ def find_winner():
 def show_winner(winner):
     piece = winner[0]
     for w in winner[1:]:
-        set_piece(w[0], w[1], GREEN)
+        #set_piece(w[0], w[1], GREEN)
+        board[w] = GREEN
 
 
 def draw_board(wx, c_map):
@@ -137,6 +178,7 @@ def rule0():
 
 def rule1(player):
     """Can player win in 1 move"""
+    logging.debug('rule1: {}'.format(player))
     for cx in range(0, COLS):
         if is_move_valid(cx):
             stash = copy.copy(board)
@@ -156,6 +198,10 @@ def main(screen):
     logging.basicConfig(format='%(asctime)s %(message)s',
                         filename='c4.log', level=logging.DEBUG)
     logging.captureWarnings(True)
+
+    for nodex in precalc_winning_nodes():
+        print(nodex)
+
 
     curses.initscr()
 
@@ -197,6 +243,7 @@ def main(screen):
             else:
                 move = random_move()
 
+            logging.debug('real move: {} for {}'.format(move, player))
             make_move(move, player)
 
             draw_board(win, colour_map)
@@ -209,7 +256,7 @@ def main(screen):
                 scores[win_piece] += 1
                 show_winner(winner)
                 draw_board(win, colour_map)
-                #time.sleep(0.5)
+                #time.sleep(0.1)
         score_win.box()
         score_win.addstr(1, 1, '{:04d}'.format(scores[RED]), colour2)
         score_win.addstr(1, 9, '{:04d}'.format(scores[BLUE]), colour3)
@@ -220,8 +267,26 @@ def main(screen):
     curses.curs_set(prev_curses)
 
 
+node_map = {}
+for nodex in precalc_winning_nodes():
+    if nodex[0] in node_map.keys():
+        lst = node_map[nodex[0]]
+    else:
+        lst = []
+    lst.append(nodex)
+    node_map[nodex[0]] = lst
+
+connect4_nodes = []
+for node in sorted(node_map.keys()):
+    for c4 in node_map[node]:
+        connect4_nodes.append(c4)
+for node in connect4_nodes:
+    print('{}: {} {} {} {} {} {} {} {}'.format(node[0], node[1], board[node[1]], node[2], board[node[2]], node[3], board[node[3]], node[4], board[node[4]]))
+
 try:
     curses.wrapper(main)
-except Exception as err:
-    print(err)
+except Exception as e:
+    print('Error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+    print(e)
+    traceback.print_exc()
     exit()
