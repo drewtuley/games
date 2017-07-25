@@ -12,6 +12,8 @@ TOP_ROW_IDX = 5
 RED = 1
 BLUE = 2
 GREEN = 3
+players = {RED: 'RED', BLUE: 'BLUE', GREEN: 'GREEN'}
+
 CHOICES = [x for x in range(0, 7)]
 
 board = [0 for ix in range(ROWS * COLS)]
@@ -64,6 +66,10 @@ def swap_player(player):
         return BLUE
     else:
         return RED
+
+
+def get_player_name(player):
+    return players[player]
 
 
 def precalc_winning_nodes():
@@ -180,7 +186,7 @@ def rule0():
 
 def rule1(player):
     """Can player win in 1 move"""
-    logging.debug('rule1: {}'.format(player))
+    logging.debug('rule1: {}'.format(get_player_name(player)))
     for cx in range(0, COLS):
         if is_move_valid(cx):
             stash = copy.copy(board)
@@ -188,18 +194,20 @@ def rule1(player):
             winner = find_winner()
             restore_board(stash)
             if winner is not None:
-                logging.debug('rule1: {} has a winning move @ {}'.format(player, cx))
+                logging.debug('rule1: {} has a winning move @ {}'.format(get_player_name(player), cx))
                 return cx
     return None
 
 
 def rule2(player):
     """Rule 1 for the other player (i.e. if he can win in 1 move I should stop him)"""
+    logging.debug('rule2: {}'.format(get_player_name(player)))
     return rule1(swap_player(player))
 
 
 def rule3(player):
     """ Can player win in 2 moves (if not stopped) """
+    logging.debug('rule3: {}'.format(get_player_name(player)))
     for cx in range(0, COLS):
         if is_move_valid(cx):
             stash = copy.copy(board)
@@ -207,7 +215,7 @@ def rule3(player):
             win_move2 = rule1(player)
             restore_board(stash)
             if win_move2 is not None:
-                logging.debug('rule3: {} has a potentially winning move @ {} & {}'.format(player, cx, win_move2))
+                logging.debug('rule3: {} has a potentially winning move @ {} & {}'.format(get_player_name(player), cx, win_move2))
                 return cx
     return None
 
@@ -251,7 +259,7 @@ def main(screen):
         draw_board(win, colour_map)
         winner = None
         while winner is None and moves_remaining() > 0:
-            if player == RED:
+            if player == RED or player == BLUE:
                 for rule in [rule1, rule2, rule3, random_move]:
                     move = rule(player)
                     if move is not None:
@@ -259,7 +267,7 @@ def main(screen):
             else:
                 move = random_move(1)
 
-            logging.debug('move: player {} goes {}'.format(player, move))
+            logging.debug('move: player {} goes {}'.format(get_player_name(player), move))
 
             make_move(move, player)
 
