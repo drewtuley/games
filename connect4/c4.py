@@ -20,7 +20,7 @@ board = [0 for ix in range(ROWS * COLS)]
 
 
 def piece_index(row, col):
-    return row * 7 + col
+    return row * COLS + col
 
 
 def get_piece_tuple(tpl):
@@ -98,7 +98,7 @@ def precalc_winning_nodes():
 def find_winner():
     empty_above = {}
     for nodes in connect4_nodes:
-        if len(empty_above) == 7:
+        if len(empty_above) == COLS:
             break
         if nodes[0][1] not in empty_above:
             piece = board[nodes[1]]
@@ -107,38 +107,6 @@ def find_winner():
                     return piece, nodes[1], nodes[2], nodes[3], nodes[4]
             else:
                 empty_above[nodes[0][1]] = True
-
-
-def find_winner_old():
-    # check horizontal
-    for rx in ([0, 1, 2, 3, 4, 5]):
-        for cx in ([0, 1, 2, 3]):
-            piece = get_piece(rx, cx)
-            if piece != 0 and get_piece(rx, cx + 1) == piece and get_piece(rx, cx + 2) == piece \
-                    and get_piece(rx, cx + 3) == piece:
-                return piece, (rx, cx), (rx, cx + 1), (rx, cx + 2), (rx, cx + 3)
-    # pure vertical
-    for rx in ([0, 1, 2]):
-        for cx in ([0, 1, 2, 3, 4, 5, 6]):
-            piece = get_piece(rx, cx)
-            if piece != 0 and get_piece(rx + 1, cx) == piece and get_piece(rx + 2, cx) == piece \
-                    and get_piece(rx + 3, cx) == piece:
-                return piece, (rx, cx), (rx + 1, cx), (rx + 2, cx), (rx + 3, cx)
-    # forward slope
-    for rx in ([0, 1, 2]):
-        for cx in ([0, 1, 2, 3]):
-            piece = get_piece(rx, cx)
-            if piece != 0 and get_piece(rx + 1, cx + 1) == piece and get_piece(rx + 2, cx + 2) == piece \
-                    and get_piece(rx + 3, cx + 3) == piece:
-                return piece, (rx, cx), (rx + 1, cx + 1), (rx + 2, cx + 2), (rx + 3, cx + 3)
-
-    # backward slope    
-    for rx in ([0, 1, 2]):
-        for cx in ([3, 4, 5, 6]):
-            piece = get_piece(rx, cx)
-            if piece != 0 and get_piece(rx + 1, cx - 1) == piece and get_piece(rx + 2, cx - 2) == piece \
-                    and get_piece(rx + 3, cx - 3) == piece:
-                return piece, (rx, cx), (rx + 1, cx - 1), (rx + 2, cx - 2), (rx + 3, cx - 3)
 
 
 def show_winner(winner):
@@ -213,9 +181,12 @@ def rule3(player):
             stash = copy.copy(board)
             make_move(cx, player)
             win_move2 = rule1(player)
+            # check if making this move will open up a winning position for the other player
+            win_move_bad = rule2(player)
             restore_board(stash)
-            if win_move2 is not None:
-                logging.debug('rule3: {} has a potentially winning move @ {} & {}'.format(get_player_name(player), cx, win_move2))
+            if win_move2 is not None and win_move_bad is None:
+                logging.debug(
+                    'rule3: {} has a potentially winning move @ {} & {}'.format(get_player_name(player), cx, win_move2))
                 return cx
     return None
 
