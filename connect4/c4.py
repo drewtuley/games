@@ -46,6 +46,24 @@ def draw_piece(wx, game_row, game_col, colour):
     wx.addch(screen_row, screen_col, curses.ACS_DIAMOND, colour)
 
 
+def dump_board():
+    logging.debug('0123456')
+    for rx in [5,4,3,2,1,0]:
+        row = ''
+        for cx in [0,1,2,3,4,5,6]:
+            piece = get_piece(rx, cx)
+            if piece == RED:
+                row += 'R'
+            elif piece == BLUE:
+                row += 'B'
+            elif piece == GREEN:
+                row += '*'
+            else:
+                row += ' '
+        logging.debug(row)
+    logging.debug('0123456')
+
+
 def is_move_valid(col):
     return get_piece(TOP_ROW_IDX, col) == 0
 
@@ -136,7 +154,7 @@ def clear_board():
         board[x] = 0
 
 
-def random_move(p):
+def random_move():
     move = choice(CHOICES)
     while not is_move_valid(move):
         move = choice(CHOICES)
@@ -148,7 +166,8 @@ def restore_board(stash):
         board[ix] = stash[ix]
 
 
-def rule0():
+def rule0(player):
+    logging.debug('rule0: {}'.format(get_player_name(player)))
     return random_move()
 
 
@@ -233,7 +252,7 @@ def main(screen):
         move_num = 1
         while winner is None and moves_remaining() > 0:
             if player == RED or player == BLUE:
-                for rule in [rule1, rule2, rule3, random_move]:
+                for rule in [rule1, rule2, rule3, rule0]:
                     move = rule(player)
                     if move is not None:
                         break
@@ -244,6 +263,8 @@ def main(screen):
 
             make_move(move, player)
             move_num += 1
+            dump_board()
+
             draw_board(win, colour_map)
             winner = find_winner()
             if winner is None:
@@ -252,7 +273,9 @@ def main(screen):
             else:
                 win_piece = winner[0]
                 scores[win_piece] += 1
+
                 show_winner(winner)
+                dump_board()
                 draw_board(win, colour_map)
                 # time.sleep(0.1)
         if winner is None:
