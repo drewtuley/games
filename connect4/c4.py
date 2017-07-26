@@ -222,13 +222,15 @@ def main(screen):
     win.bkgd(colour1)
     score_win.bkgd(colour1)
 
-    scores = {RED: 0, BLUE: 0}
+    scores = {RED: 0, BLUE: 0, GREEN: 0}
     start_player = RED
+
     while True:
         clear_board()
         player = start_player
         draw_board(win, colour_map)
         winner = None
+        move_num = 1
         while winner is None and moves_remaining() > 0:
             if player == RED or player == BLUE:
                 for rule in [rule1, rule2, rule3, random_move]:
@@ -238,10 +240,10 @@ def main(screen):
             else:
                 move = random_move(1)
 
-            logging.debug('move: player {} goes {}'.format(get_player_name(player), move))
+            logging.debug('move({}): player {} goes {}'.format(move_num, get_player_name(player), move))
 
             make_move(move, player)
-
+            move_num += 1
             draw_board(win, colour_map)
             winner = find_winner()
             if winner is None:
@@ -253,10 +255,13 @@ def main(screen):
                 show_winner(winner)
                 draw_board(win, colour_map)
                 # time.sleep(0.1)
+        if winner is None:
+            scores[GREEN] += 1
         score_win.box()
         score_win.addstr(1, 1, '{:04d}'.format(scores[RED]), colour2)
-        score_win.addstr(1, 9, '{:04d}'.format(scores[BLUE]), colour3)
-        logging.debug('RED:{} BLUE:{}'.format(scores[RED], scores[BLUE]))
+        score_win.addstr(1, 6, '{:03d}'.format(scores[GREEN]), colour4)
+        score_win.addstr(1, 10, '{:04d}'.format(scores[BLUE]), colour3)
+        logging.debug('RED:{} BLUE:{} GREEN:{}'.format(scores[RED], scores[BLUE], scores[GREEN]))
         score_win.refresh()
         start_player = swap_player(start_player)
 
