@@ -166,14 +166,15 @@ def restore_board(stash):
         board[ix] = stash[ix]
 
 
-def rule0(player):
+def rule0(player, move):
     logging.debug('rule0: {}'.format(get_player_name(player)))
-    return random_move()
+    return [random_move()]
 
 
-def rule1(player):
+def rule1(player, move):
     """Can player win in 1 move"""
     logging.debug('rule1: {}'.format(get_player_name(player)))
+    win_moves = []
     for cx in range(0, COLS):
         if is_move_valid(cx):
             stash = copy.copy(board)
@@ -182,32 +183,37 @@ def rule1(player):
             restore_board(stash)
             if winner is not None:
                 logging.debug('rule1: {} has a winning move @ {}'.format(get_player_name(player), cx))
-                return cx
-    return None
+                win_moves.append(cx)
+    return win_moves
 
 
-def rule2(player):
+def rule2(player, move):
     """Rule 1 for the other player (i.e. if he can win in 1 move I should stop him)"""
     logging.debug('rule2: {}'.format(get_player_name(player)))
-    return rule1(swap_player(player))
+    return rule1(swap_player(player), move)
 
 
-def rule3(player):
+def rule3(player, move):
     """ Can player win in 2 moves (if not stopped) """
     logging.debug('rule3: {}'.format(get_player_name(player)))
     for cx in range(0, COLS):
         if is_move_valid(cx):
             stash = copy.copy(board)
             make_move(cx, player)
-            win_move2 = rule1(player)
+            win_move2 = rule1(player, move)
+            if len(win_move2) > 1:
+                restore_board(stash)
+                logging.debug(
+                    'rule3: {} has a potentially winning move @ {} & {}'.format(get_player_name(player), cx, win_move2))
+                return [cx]     # making this move opens up >1 possible wins
             # check if making this move will open up a winning position for the other player
-            win_move_bad = rule2(player)
+            win_move_bad = rule2(player, move)
             restore_board(stash)
-            if win_move2 is not None and win_move_bad is None:
+            if len(win_move2)>1  and len(win_move_bad) == 0:
                 logging.debug(
                     'rule3: {} has a potentially winning move @ {} & {}'.format(get_player_name(player), cx, win_move2))
                 return cx
-    return None
+    return []
 
 
 def main(screen):
@@ -243,6 +249,7 @@ def main(screen):
 
     scores = {RED: 0, BLUE: 0, GREEN: 0}
     start_player = RED
+    game = 1
 
     while True:
         clear_board()
@@ -251,13 +258,18 @@ def main(screen):
         winner = None
         move_num = 1
         while winner is None and moves_remaining() > 0:
-            if player == RED or player == BLUE:
+            if player == RED:
                 for rule in [rule1, rule2, rule3, rule0]:
-                    move = rule(player)
-                    if move is not None:
+                    moves = rule(player, move_num)
+                    if len(moves) >0:
+                        move = moves[0]
                         break
-            else:
-                move = random_move(1)
+            else:       # has to be BLUE by default
+                for rule in [rule0]:
+                    moves = rule(player, move_num)
+                    if len(moves) >0:
+                        move = moves[0]
+                        break
 
             logging.debug('move({}): player {} goes {}'.format(move_num, get_player_name(player), move))
 
@@ -284,7 +296,8 @@ def main(screen):
         score_win.addstr(1, 1, '{:04d}'.format(scores[RED]), colour2)
         score_win.addstr(1, 6, '{:03d}'.format(scores[GREEN]), colour4)
         score_win.addstr(1, 10, '{:04d}'.format(scores[BLUE]), colour3)
-        logging.debug('RED:{} BLUE:{} GREEN:{}'.format(scores[RED], scores[BLUE], scores[GREEN]))
+        logging.debug('Result of game {} - RED:{} BLUE:{} GREEN:{}'.format(game, scores[RED], scores[BLUE], scores[GREEN]))
+        game += 1
         score_win.refresh()
         start_player = swap_player(start_player)
 
